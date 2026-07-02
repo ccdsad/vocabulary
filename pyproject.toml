@@ -10,3 +10,125 @@ dependencies = [
     "pydantic-settings>=2.14.2",
     "python-telegram-bot[ext]>=22.8",
 ]
+
+[dependency-groups]
+dev = [
+    "asyncpg-stubs>=0.31.2",
+    "mypy>=2.1.0",
+    "pre-commit>=4.6.0",
+    "ruff>=0.15.20",
+]
+
+[tool.ruff]
+line-length = 120
+target-version = "py314"
+include = [
+    "tests/*.py",
+    "src/*.py",
+    "db/*.py",
+]
+
+[tool.ruff.format]
+quote-style = "single"
+
+[tool.ruff.lint]
+preview = true
+explicit-preview-rules = true
+
+ignore = [
+    "S104",  # bind to all interfaces is OK in Docker
+    "B008",  # function call (e.g. `Depends`) in argument defaults
+    "SIM108",  # Use ternary operator ... instead of if-else-block
+    "PLR2004",  # Magic value used in comparison
+    "PLW0603",  # `global` statement is explicit, its usage is deliberate decision
+    "N805",  # `cls` is used instead of `self` in `pydantic` validators
+    "N818",  # Exception should be named with an Error suffix
+    "S311",   # suspicious-non-cryptographic-random-usage
+]
+
+# For the reference, check https://docs.astral.sh/ruff/rules/
+select = [
+    "F",  # pyflakes
+    "E", "W",  # pycodestyle
+    "I",  # isort
+    "UP",  # pyupgrade
+    "YTT",  # flake8-2020
+    "ANN204",  # Missing return type annotation for special method ...
+    "ASYNC",  # flake8-async
+    "S",  # flake8-bandit
+    "BLE",  # flake8-blind-except
+    "B",  # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "DTZ",  # flake8-datetimez
+    "T10",  # flake8-debugger
+    "EXE",  # flake8-executable
+    "FA",  # flake8-future-annotations
+    "ISC",  # flake8-implicit-str-concat
+    "G",  # flake8-logging-format
+    "INP",  # flake8-no-pep420
+    "PIE",  # flake8-pie
+    "T20",  # flake8-print
+    "PT",  # flake8-pytest-style
+    "RET501", "RET502", "RET503",  # flake8-return
+    "SLOT",  # flake8-slots
+    "SIM",  # flake8-simplify
+    "TID",  # flake8-tidy-imports
+    "PTH",  # flake8-use-pathlib
+    "PGH",  # pygrep-hooks
+    "PL",  # Pylint
+    "FLY",  # flynt
+    "PERF",  # Perflint
+    "LOG",  # flake8-logging
+    "SLF",  # flake8-self
+    "N",  # pep8-naming
+    "RUF",  # Ruff-specific
+]
+
+fixable = [
+    "F401",  # unused imports
+    "I",  # isort
+    "UP",  # pyupgrade
+]
+
+[tool.ruff.lint.isort]
+section-order = [
+    "future",
+    "standard-library",
+    "third-party",
+    "first-party",
+    "local-folder",
+]
+
+[tool.ruff.lint.flake8-pytest-style]
+fixture-parentheses = false
+parametrize-names-type = "csv"
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F403"]  # star-imports are OK for packages
+"tests/**.py" = [
+    "S101",  # it's fine to use 'assert' in tests
+    "S105", "S106", "S107",  # tests can have hard-coded passwords
+    "S311",  # allow usage of module `random` in tests
+    "PLR0913",  # Too many arguments in function definition
+    "SLF001",  # To test private members
+]
+
+[tool.mypy]
+plugins = ["pydantic.mypy"]
+disallow_untyped_calls = true
+disallow_untyped_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+warn_return_any = true
+warn_redundant_casts = true
+warn_unused_configs = true
+warn_unused_ignores = true
+
+[[tool.mypy.overrides]]
+module = [
+    "tests.*",
+]
+disallow_untyped_calls = false
+disallow_untyped_defs = false
+check_untyped_defs = false
+disallow_untyped_decorators = false

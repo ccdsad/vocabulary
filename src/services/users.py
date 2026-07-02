@@ -1,4 +1,5 @@
-from telegram import Chat, User as TelegramUser
+from telegram import Chat
+from telegram import User as TelegramUser
 
 from db.user import User
 

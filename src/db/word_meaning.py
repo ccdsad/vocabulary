@@ -4,13 +4,13 @@ from piccolo.table import Table
 from db.word import Word
 
 
-class WordMeaning(Table, tablename="word_meanings"):
+class WordMeaning(Table, tablename='word_meanings'):
     id = BigSerial(primary_key=True)
     word = ForeignKey(
         references=Word,
         null=False,
         on_delete=OnDelete.cascade,
-        db_column_name="word_id",
+        db_column_name='word_id',
     )
     definition_en = Text(required=True)
     simple_explanation_en = Text(null=True, default=None)

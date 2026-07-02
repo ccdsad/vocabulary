@@ -7,7 +7,6 @@ from asyncpg import PostgresError
 from pydantic import ValidationError
 from telegram import Chat, Update
 from telegram.error import TelegramError
-from telegram.ext import ContextTypes
 
 from db.user import User
 from services.vocabulary import (
@@ -16,12 +15,12 @@ from services.vocabulary import (
     find_or_attach_existing_vocabulary_entry,
     get_vocabulary_entry,
 )
+from telegram_handlers.context import UserContext
 from telegram_handlers.decorators import DB_USER_CONTEXT_KEY, with_db_user
 from telegram_handlers.review import (
     REVIEW_SESSION_CONTEXT_KEY,
     handle_review_text_answer,
 )
-
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +28,7 @@ logger = logging.getLogger(__name__)
 @with_db_user
 async def add_word(
     update: Update,
-    context: ContextTypes.DEFAULT_TYPE,
+    context: UserContext,
     *,
     client: openai.AsyncOpenAI,
     llm_model: str,
@@ -61,9 +60,9 @@ async def add_word(
             text=tg_message.text,
         )
     except PostgresError:
-        logger.exception("Failed to find existing vocabulary entry")
+        logger.exception('Failed to find existing vocabulary entry')
         await tg_message.reply_text(
-            "Failed to check the vocabulary entry. Please try again.",
+            'Failed to check the vocabulary entry. Please try again.',
             do_quote=True,
         )
         return
@@ -75,7 +74,7 @@ async def add_word(
         )
         return
 
-    status_message = await tg_message.reply_text("Generating vocabulary entry...")
+    status_message = await tg_message.reply_text('Generating vocabulary entry...')
     try:
         user_word = await add_vocabulary_from_text(
             user=db_user,
@@ -86,40 +85,30 @@ async def add_word(
         )
         entry = await get_vocabulary_entry(user_word=user_word)
     except openai.APITimeoutError:
-        logger.exception("OpenAI vocabulary generation timed out")
-        await status_message.edit_text(
-            "OpenAI took too long to answer. Please try again."
-        )
-        return
+        logger.exception('OpenAI vocabulary generation timed out')
+        await status_message.edit_text('OpenAI took too long to answer. Please try again.')
+        raise
     except openai.APIConnectionError:
-        logger.exception("OpenAI connection failed")
-        await status_message.edit_text(
-            "OpenAI connection failed. Please try again."
-        )
-        return
+        logger.exception('OpenAI connection failed')
+        await status_message.edit_text('OpenAI connection failed. Please try again.')
+        raise
     except openai.APIError:
-        logger.exception("OpenAI API failed")
-        await status_message.edit_text("OpenAI failed. Please try again.")
-        return
+        logger.exception('OpenAI API failed')
+        await status_message.edit_text('OpenAI failed. Please try again.')
+        raise
     except ValidationError:
-        logger.exception("OpenAI returned an invalid vocabulary response")
-        await status_message.edit_text(
-            "OpenAI returned an invalid vocabulary response. Please try again."
-        )
-        return
+        logger.exception('OpenAI returned an invalid vocabulary response')
+        await status_message.edit_text('OpenAI returned an invalid vocabulary response. Please try again.')
+        raise
     except PostgresError:
-        logger.exception("Failed to save vocabulary generation")
-        await status_message.edit_text(
-            "Failed to save the vocabulary entry. Please try again."
-        )
-        return
+        logger.exception('Failed to save vocabulary generation')
+        await status_message.edit_text('Failed to save the vocabulary entry. Please try again.')
+        raise
 
     with suppress(TelegramError):
         await status_message.delete()
     await tg_message.reply_text(
-        _format_vocabulary_entry(entry, already_saved=False)
-        if entry is not None
-        else "Your word is saved, okay :)",
+        _format_vocabulary_entry(entry, already_saved=False) if entry is not None else 'Your word is saved, okay :)',
         do_quote=True,
     )
 
@@ -133,45 +122,33 @@ def _format_vocabulary_entry(
     *,
     already_saved: bool,
 ) -> str:
-    header = (
-        "✅ Already in your vocabulary"
-        if already_saved
-        else "✅ Saved to your vocabulary"
-    )
+    header = '✅ Already in your vocabulary' if already_saved else '✅ Saved to your vocabulary'
     title = entry.lemma
     if entry.cefr_level:
-        title = f"{title} · {entry.cefr_level}"
+        title = f'{title} · {entry.cefr_level}'
 
     parts = [
         header,
         title,
-        f"🇷🇺  Перевод\n{', '.join(entry.translations_ru)}",
-        f"📖 Значение\n{entry.simple_explanation_en or entry.definition_en}",
+        f'🇷🇺  Перевод\n{", ".join(entry.translations_ru)}',
+        f'📖 Значение\n{entry.simple_explanation_en or entry.definition_en}',
     ]
     if entry.example_en:
-        example = f"💬 Пример\n{entry.example_en}"
+        example = f'💬 Пример\n{entry.example_en}'
         if entry.example_ru:
-            example = f"{example}\n\n{entry.example_ru}"
+            example = f'{example}\n\n{entry.example_ru}'
         parts.append(example)
     elif entry.example_ru:
-        parts.append(f"💬 Пример\n{entry.example_ru}")
+        parts.append(f'💬 Пример\n{entry.example_ru}')
     if entry.synonyms:
-        parts.append(f"🔁 Синонимы\n{_format_bullets(entry.synonyms)}")
+        parts.append(f'🔁 Синонимы\n{_format_bullets(entry.synonyms)}')
     if entry.collocations:
-        parts.append(f"🔗 Частые сочетания\n{_format_bullets(entry.collocations)}")
+        parts.append(f'🔗 Частые сочетания\n{_format_bullets(entry.collocations)}')
     if entry.usage_note_ru:
-        parts.append(f"💡 Обрати внимание\n{entry.usage_note_ru}")
+        parts.append(f'💡 Обрати внимание\n{entry.usage_note_ru}')
 
-    return "\n\n".join(parts)
+    return '\n\n'.join(parts)
 
 
 def _format_bullets(items: list[str]) -> str:
-    return "\n".join(f"• {item}" for item in items)
-    if entry.example_ru:
-        parts.append(f"RU: {entry.example_ru}")
-    if entry.collocations:
-        parts.append(f"Collocations: {', '.join(entry.collocations[:4])}")
-    if entry.usage_note_ru:
-        parts.append(f"Note: {entry.usage_note_ru}")
-
-    return "\n\n".join(parts)
+    return '\n'.join(f'• {item}' for item in items)

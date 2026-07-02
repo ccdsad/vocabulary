@@ -1,26 +1,28 @@
+from typing import cast
+
 from piccolo.apps.migrations.auto.migration_manager import MigrationManager
+from piccolo.engine.base import Engine
 from piccolo.engine.finder import engine_finder
 
-
-ID = "001"
-VERSION = "1.34.0"
-DESCRIPTION = "Initial schema"
+ID = '001'
+VERSION = '1.34.0'
+DESCRIPTION = 'Initial schema'
 
 
 async def run_statements(statements: list[str]) -> None:
-    engine = engine_finder()
+    engine = cast(Engine, engine_finder())
     for statement in statements:
         await engine.run_ddl(statement)
 
 
-async def forwards():
+async def forwards() -> MigrationManager:
     manager = MigrationManager(
         migration_id=ID,
-        app_name="db",
+        app_name='db',
         description=DESCRIPTION,
     )
 
-    async def run():
+    async def run() -> None:
         await run_statements(
             [
                 """
@@ -114,7 +116,7 @@ async def forwards():
                     ON DELETE CASCADE
             )
             """,
-                "CREATE INDEX user_words_word_id_idx ON user_words (word_id)",
+                'CREATE INDEX user_words_word_id_idx ON user_words (word_id)',
                 """
             CREATE INDEX user_words_meaning_id_idx ON user_words (meaning_id)
             """,
@@ -143,14 +145,14 @@ async def forwards():
             ]
         )
 
-    async def backwards():
+    async def backwards() -> None:
         await run_statements(
             [
-                "DROP TABLE IF EXISTS llm_generations",
-                "DROP TABLE IF EXISTS user_words",
-                "DROP TABLE IF EXISTS word_meanings",
-                "DROP TABLE IF EXISTS words",
-                "DROP TABLE IF EXISTS users",
+                'DROP TABLE IF EXISTS llm_generations',
+                'DROP TABLE IF EXISTS user_words',
+                'DROP TABLE IF EXISTS word_meanings',
+                'DROP TABLE IF EXISTS words',
+                'DROP TABLE IF EXISTS users',
             ]
         )
 

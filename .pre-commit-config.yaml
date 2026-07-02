@@ -1,0 +1,32 @@
+default_language_version:
+    python: python3.14
+repos:
+  - repo: local
+    hooks:
+      - id: ruff-fix
+        name: ruff fix
+        entry: uv run ruff check --fix --exit-non-zero-on-fix src db tests
+        language: system
+        pass_filenames: false
+        stages: [pre-commit]
+
+      - id: ruff-format
+        name: ruff format
+        entry: uv run ruff format src db tests
+        language: system
+        pass_filenames: false
+        stages: [pre-commit]
+
+      - id: ruff-check
+        name: ruff check
+        entry: uv run ruff check --output-format concise src db tests
+        language: system
+        pass_filenames: false
+        stages: [pre-commit]
+
+      - id: mypy
+        name: mypy
+        entry: uv run mypy --show-error-context --show-column-numbers --pretty --show-error-codes src db tests
+        language: system
+        pass_filenames: false
+        stages: [pre-commit]

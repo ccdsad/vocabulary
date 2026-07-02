@@ -2,7 +2,7 @@ from piccolo.columns import BigInt, BigSerial, Boolean, Text, Timestamptz, Varch
 from piccolo.table import Table
 
 
-class User(Table, tablename="users"):
+class User(Table, tablename='users'):
     id = BigSerial(primary_key=True)
     tg_user_id = BigInt(unique=True, required=True)
     chat_id = BigInt(unique=True, required=True)

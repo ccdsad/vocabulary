@@ -10,16 +10,15 @@ from db.word import Word
 from db.word_meaning import WordMeaning
 from enums import UserWordStatus
 
-
 DEFAULT_REVIEW_LIMIT = 20
-MIN_EASE_FACTOR = Decimal("1.30")
+MIN_EASE_FACTOR = Decimal('1.30')
 
 
 class ReviewGrade(StrEnum):
-    AGAIN = "again"
-    HARD = "hard"
-    GOOD = "good"
-    EASY = "easy"
+    AGAIN = 'again'
+    HARD = 'hard'
+    GOOD = 'good'
+    EASY = 'easy'
 
 
 @dataclass(frozen=True)
@@ -43,19 +42,12 @@ async def get_due_user_word_ids(
     now = now or datetime.now(UTC)
     rows = (
         await UserWord.select(UserWord.id, UserWord.next_review_at)
-        .where(
-            (UserWord.user == user.id)
-            & (UserWord.status != UserWordStatus.SUSPENDED.value)
-        )
+        .where((UserWord.user == user.id) & (UserWord.status != UserWordStatus.SUSPENDED.value))
         .order_by(UserWord.next_review_at)
         .run()
     )
-    due_rows = [
-        row
-        for row in rows
-        if row["next_review_at"] is None or row["next_review_at"] <= now
-    ]
-    return [int(row["id"]) for row in due_rows[:limit]]
+    due_rows = [row for row in rows if row['next_review_at'] is None or row['next_review_at'] <= now]
+    return [int(row['id']) for row in due_rows[:limit]]
 
 
 async def count_due_user_words(
@@ -66,34 +58,19 @@ async def count_due_user_words(
     now = now or datetime.now(UTC)
     rows = (
         await UserWord.select(UserWord.next_review_at)
-        .where(
-            (UserWord.user == user.id)
-            & (UserWord.status != UserWordStatus.SUSPENDED.value)
-        )
+        .where((UserWord.user == user.id) & (UserWord.status != UserWordStatus.SUSPENDED.value))
         .run()
     )
-    return sum(
-        1
-        for row in rows
-        if row["next_review_at"] is None or row["next_review_at"] <= now
-    )
+    return sum(1 for row in rows if row['next_review_at'] is None or row['next_review_at'] <= now)
 
 
 async def get_review_card(*, user: User, user_word_id: int) -> ReviewCard | None:
-    user_word = (
-        await UserWord.objects()
-        .where((UserWord.id == user_word_id) & (UserWord.user == user.id))
-        .first()
-    )
+    user_word = await UserWord.objects().where((UserWord.id == user_word_id) & (UserWord.user == user.id)).first()
     if user_word is None:
         return None
 
     word = await Word.objects().where(Word.id == _db_id(user_word.word)).first()
-    meaning = (
-        await WordMeaning.objects()
-        .where(WordMeaning.id == _db_id(user_word.meaning))
-        .first()
-    )
+    meaning = await WordMeaning.objects().where(WordMeaning.id == _db_id(user_word.meaning)).first()
     if word is None or meaning is None:
         return None
 
@@ -117,11 +94,7 @@ async def apply_review_grade(
     now: datetime | None = None,
 ) -> UserWord | None:
     now = now or datetime.now(UTC)
-    user_word = (
-        await UserWord.objects()
-        .where((UserWord.id == user_word_id) & (UserWord.user == user.id))
-        .first()
-    )
+    user_word = await UserWord.objects().where((UserWord.id == user_word_id) & (UserWord.user == user.id)).first()
     if user_word is None:
         return None
 
@@ -133,12 +106,12 @@ async def apply_review_grade(
     if grade == ReviewGrade.AGAIN:
         repetitions = 0
         lapses += 1
-        ease_factor = max(MIN_EASE_FACTOR, ease_factor - Decimal("0.20"))
+        ease_factor = max(MIN_EASE_FACTOR, ease_factor - Decimal('0.20'))
         interval_days = 0
         next_review_at = now + timedelta(minutes=10)
         status = UserWordStatus.LEARNING.value
     elif grade == ReviewGrade.HARD:
-        ease_factor = max(MIN_EASE_FACTOR, ease_factor - Decimal("0.15"))
+        ease_factor = max(MIN_EASE_FACTOR, ease_factor - Decimal('0.15'))
         interval_days = 1 if interval_days == 0 else max(1, round(interval_days * 1.2))
         repetitions += 1
         next_review_at = now + timedelta(days=interval_days)
@@ -154,7 +127,7 @@ async def apply_review_grade(
         next_review_at = now + timedelta(days=interval_days)
         status = UserWordStatus.REVIEW.value
     else:
-        ease_factor += Decimal("0.15")
+        ease_factor += Decimal('0.15')
         if repetitions == 0:
             interval_days = 3
         elif repetitions == 1:
@@ -187,4 +160,4 @@ async def apply_review_grade(
 
 
 def _db_id(value: Any) -> int:
-    return int(value.id if hasattr(value, "id") else value)
+    return int(value.id if hasattr(value, 'id') else value)
