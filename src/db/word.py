@@ -4,7 +4,7 @@ from piccolo.table import Table
 from enums import CefrLevel
 
 
-class Word(Table, tablename="words"):
+class Word(Table, tablename='words'):
     id = BigSerial(primary_key=True)
     lemma = Text(required=True)
     part_of_speech = Text(required=True)

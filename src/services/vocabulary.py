@@ -1,6 +1,5 @@
 from dataclasses import dataclass
-from datetime import UTC, datetime
-from datetime import timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import openai
@@ -79,7 +78,7 @@ async def add_vocabulary_from_text(
         vocabulary=vocabulary,
         llm_model=llm_model,
         prompt_version=prompt_version,
-        llm_payload=vocabulary.model_dump(mode="json"),
+        llm_payload=vocabulary.model_dump(mode='json'),
     )
 
 
@@ -94,10 +93,7 @@ async def find_or_attach_existing_vocabulary_entry(
 
     user_word = (
         await UserWord.objects()
-        .where(
-            (UserWord.user == user.id)
-            & (UserWord.original_input.ilike(normalized_text))
-        )
+        .where((UserWord.user == user.id) & (UserWord.original_input.ilike(normalized_text)))
         .first()
     )
     if user_word is not None:
@@ -108,18 +104,12 @@ async def find_or_attach_existing_vocabulary_entry(
         return None
 
     meaning = (
-        await WordMeaning.objects()
-        .where((WordMeaning.word == word.id) & (WordMeaning.meaning_order == 1))
-        .first()
+        await WordMeaning.objects().where((WordMeaning.word == word.id) & (WordMeaning.meaning_order == 1)).first()
     )
     if meaning is None:
         return None
 
-    user_word = (
-        await UserWord.objects()
-        .where((UserWord.user == user.id) & (UserWord.meaning == meaning.id))
-        .first()
-    )
+    user_word = await UserWord.objects().where((UserWord.user == user.id) & (UserWord.meaning == meaning.id)).first()
     if user_word is None:
         now = datetime.now(UTC)
         user_word = UserWord(
@@ -137,11 +127,7 @@ async def find_or_attach_existing_vocabulary_entry(
 
 async def get_vocabulary_entry(*, user_word: UserWord) -> VocabularyEntry | None:
     word = await Word.objects().where(Word.id == _db_id(user_word.word)).first()
-    meaning = (
-        await WordMeaning.objects()
-        .where(WordMeaning.id == _db_id(user_word.meaning))
-        .first()
-    )
+    meaning = await WordMeaning.objects().where(WordMeaning.id == _db_id(user_word.meaning)).first()
     if word is None or meaning is None:
         return None
 
@@ -183,12 +169,16 @@ async def save_vocabulary_generation(
             meaning=meaning,
             vocabulary=vocabulary,
         )
-        await LLMGeneration(
-            word_meaning=meaning.id,
-            llm_model=llm_model,
-            prompt_version=prompt_version,
-            llm_payload=llm_payload,
-        ).save().run()
+        await (
+            LLMGeneration(
+                word_meaning=meaning.id,
+                llm_model=llm_model,
+                prompt_version=prompt_version,
+                llm_payload=llm_payload,
+            )
+            .save()
+            .run()
+        )
 
     return user_word
 
@@ -196,10 +186,7 @@ async def save_vocabulary_generation(
 async def _upsert_word(*, vocabulary: VocabularyGeneration) -> Word:
     word = (
         await Word.objects()
-        .where(
-            (Word.lemma == vocabulary.lemma)
-            & (Word.part_of_speech == vocabulary.part_of_speech.value)
-        )
+        .where((Word.lemma == vocabulary.lemma) & (Word.part_of_speech == vocabulary.part_of_speech.value))
         .first()
     )
     if word is None:
@@ -207,17 +194,13 @@ async def _upsert_word(*, vocabulary: VocabularyGeneration) -> Word:
             lemma=vocabulary.lemma,
             part_of_speech=vocabulary.part_of_speech.value,
             transcription=vocabulary.transcription,
-            cefr_level=vocabulary.cefr_level.value
-            if vocabulary.cefr_level is not None
-            else None,
+            cefr_level=vocabulary.cefr_level.value if vocabulary.cefr_level is not None else None,
         )
         await word.save().run()
         return word
 
     word.transcription = vocabulary.transcription
-    word.cefr_level = (
-        vocabulary.cefr_level.value if vocabulary.cefr_level is not None else None
-    )
+    word.cefr_level = vocabulary.cefr_level.value if vocabulary.cefr_level is not None else None
     await word.save(columns=[Word.transcription, Word.cefr_level]).run()
     return word
 
@@ -230,10 +213,7 @@ async def _upsert_word_meaning(
     meaning_order = 1
     meaning = (
         await WordMeaning.objects()
-        .where(
-            (WordMeaning.word == word.id)
-            & (WordMeaning.meaning_order == meaning_order)
-        )
+        .where((WordMeaning.word == word.id) & (WordMeaning.meaning_order == meaning_order))
         .first()
     )
     if meaning is None:
@@ -285,11 +265,7 @@ async def _upsert_user_word(
     meaning: WordMeaning,
     vocabulary: VocabularyGeneration,
 ) -> UserWord:
-    user_word = (
-        await UserWord.objects()
-        .where((UserWord.user == user.id) & (UserWord.meaning == meaning.id))
-        .first()
-    )
+    user_word = await UserWord.objects().where((UserWord.user == user.id) & (UserWord.meaning == meaning.id)).first()
     if user_word is None:
         now = datetime.now(UTC)
         user_word = UserWord(
@@ -310,4 +286,4 @@ async def _upsert_user_word(
 
 
 def _db_id(value: Any) -> int:
-    return int(value.id if hasattr(value, "id") else value)
+    return int(value.id if hasattr(value, 'id') else value)

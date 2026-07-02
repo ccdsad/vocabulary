@@ -4,7 +4,6 @@ from db.user_word import UserWord
 from db.word import Word
 from db.word_meaning import WordMeaning
 
-
 TABLES = [
     User,
     Word,
@@ -14,10 +13,10 @@ TABLES = [
 ]
 
 __all__ = [
-    "LLMGeneration",
-    "TABLES",
-    "User",
-    "UserWord",
-    "Word",
-    "WordMeaning",
+    'TABLES',
+    'LLMGeneration',
+    'User',
+    'UserWord',
+    'Word',
+    'WordMeaning',
 ]
