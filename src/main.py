@@ -12,6 +12,7 @@ from telegram.ext import (
 from telegram.request import HTTPXRequest
 
 from config.app import app_settings
+from healthcheck import start_healthcheck_server
 from telegram_handlers.context import USER_CONTEXT_TYPES
 from telegram_handlers.review import (
     REVIEW_GRADE_CALLBACK_PREFIX,
@@ -27,6 +28,7 @@ PROMPT_VERSION = 1
 
 
 if __name__ == '__main__':
+    start_healthcheck_server()
     client = openai.AsyncOpenAI(
         api_key=app_settings.openai_api_key,
         timeout=app_settings.openai_timeout_seconds,
