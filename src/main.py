@@ -7,13 +7,14 @@ from telegram.ext import (
     CallbackQueryHandler,
     CommandHandler,
     MessageHandler,
+    TypeHandler,
     filters,
 )
 from telegram.request import HTTPXRequest
 
 from config.app import app_settings
-from healthcheck import start_healthcheck_server
 from telegram_handlers.context import USER_CONTEXT_TYPES
+from telegram_handlers.idempotency import skip_processed_update
 from telegram_handlers.review import (
     REVIEW_GRADE_CALLBACK_PREFIX,
     REVIEW_SHOW_CALLBACK,
@@ -28,7 +29,6 @@ PROMPT_VERSION = 1
 
 
 if __name__ == '__main__':
-    start_healthcheck_server()
     client = openai.AsyncOpenAI(
         api_key=app_settings.openai_api_key,
         timeout=app_settings.openai_timeout_seconds,
@@ -38,18 +38,14 @@ if __name__ == '__main__':
         connect_timeout=app_settings.telegram_connect_timeout_seconds,
         read_timeout=app_settings.telegram_read_timeout_seconds,
     )
-    get_updates_request = HTTPXRequest(
-        connect_timeout=app_settings.telegram_connect_timeout_seconds,
-        read_timeout=app_settings.telegram_read_timeout_seconds,
-    )
     app = (
         ApplicationBuilder()
         .token(app_settings.tg_access_token)
         .context_types(USER_CONTEXT_TYPES)
         .request(request)
-        .get_updates_request(get_updates_request)
         .build()
     )
+    app.add_handler(TypeHandler(Update, skip_processed_update), group=-1)
     app.add_handler(CommandHandler('review', start_review))
     app.add_handler(CommandHandler('cancel', cancel_review))
     app.add_handler(CallbackQueryHandler(show_review_answer, pattern=f'^{REVIEW_SHOW_CALLBACK}$'))
@@ -70,4 +66,13 @@ if __name__ == '__main__':
             ),
         )
     )
-    app.run_polling(allowed_updates=Update.ALL_TYPES)
+
+    webhook_path = app_settings.webhook_path.strip('/')
+    webhook_url = f'{app_settings.webhook_base_url.rstrip("/")}/{webhook_path}'
+    app.run_webhook(
+        listen='0.0.0.0',
+        port=app_settings.port,
+        url_path=webhook_path,
+        webhook_url=webhook_url,
+        allowed_updates=Update.ALL_TYPES,
+    )

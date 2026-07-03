@@ -1,4 +1,5 @@
 from db.llm_generation import LLMGeneration
+from db.processed_telegram_update import ProcessedTelegramUpdate
 from db.user import User
 from db.user_word import UserWord
 from db.word import Word
@@ -10,11 +11,13 @@ TABLES = [
     WordMeaning,
     UserWord,
     LLMGeneration,
+    ProcessedTelegramUpdate,
 ]
 
 __all__ = [
     'TABLES',
     'LLMGeneration',
+    'ProcessedTelegramUpdate',
     'User',
     'UserWord',
     'Word',
