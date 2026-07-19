@@ -4,6 +4,10 @@ from telegram import User as TelegramUser
 from db.user import User
 
 
+async def get_all_users() -> list[User]:
+    return await User.objects().run()
+
+
 async def upsert_telegram_user(
     *,
     telegram_user: TelegramUser,

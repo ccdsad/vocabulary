@@ -12,7 +12,7 @@ from telegram.ext import (
 )
 from telegram.request import HTTPXRequest
 
-from config.app import app_settings
+from config.app import get_app_settings
 from telegram_handlers.context import USER_CONTEXT_TYPES
 from telegram_handlers.idempotency import skip_processed_update
 from telegram_handlers.review import (
@@ -28,7 +28,8 @@ from telegram_handlers.vocabulary import add_word
 PROMPT_VERSION = 1
 
 
-if __name__ == '__main__':
+def run_bot() -> None:
+    app_settings = get_app_settings()
     client = openai.AsyncOpenAI(
         api_key=app_settings.openai_api_key,
         timeout=app_settings.openai_timeout_seconds,
@@ -76,3 +77,7 @@ if __name__ == '__main__':
         webhook_url=webhook_url,
         allowed_updates=Update.ALL_TYPES,
     )
+
+
+if __name__ == '__main__':
+    run_bot()
