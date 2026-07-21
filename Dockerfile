@@ -37,6 +37,4 @@ ENV PATH="/app/.venv/bin:$PATH" \
 
 USER app
 
-EXPOSE 8000
-
 CMD ["python", "src/main.py"]

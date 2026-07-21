@@ -68,15 +68,7 @@ def run_bot() -> None:
         )
     )
 
-    webhook_path = app_settings.webhook_path.strip('/')
-    webhook_url = f'{app_settings.webhook_base_url.rstrip("/")}/{webhook_path}'
-    app.run_webhook(
-        listen='0.0.0.0',
-        port=app_settings.port,
-        url_path=webhook_path,
-        webhook_url=webhook_url,
-        allowed_updates=Update.ALL_TYPES,
-    )
+    app.run_polling(allowed_updates=Update.ALL_TYPES)
 
 
 if __name__ == '__main__':
